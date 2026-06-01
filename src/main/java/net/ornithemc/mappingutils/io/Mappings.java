@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -334,6 +335,14 @@ public class Mappings {
 			return (ParameterMapping)getChild(MappingTarget.PARAMETER, key);
 		}
 
+		public final LocalVariableMapping getLocalVariable(int index, int startOffset, int lvtIndex, String src) {
+			return getLocalVariable(LocalVariableMapping.key(index, startOffset, lvtIndex, src));
+		}
+
+		private LocalVariableMapping getLocalVariable(String key) {
+			return (LocalVariableMapping)getChild(MappingTarget.LOCAL_VARIABLE, key);
+		}
+
 		public final Collection<Mapping> getChildren() {
 			return children.values();
 		}
@@ -377,6 +386,10 @@ public class Mappings {
 			return castChildren(MappingTarget.PARAMETER);
 		}
 
+		public Collection<LocalVariableMapping> getLocalVariables() {
+			return castChildren(MappingTarget.LOCAL_VARIABLE);
+		}
+
 		public final Collection<Mapping> getChildren(String id) {
 			if (childrenById == null) {
 				throw new UnsupportedOperationException("these mappings are not cached by id!");
@@ -395,6 +408,8 @@ public class Mappings {
 				return addMethod(key, dst);
 			case PARAMETER:
 				return addParameter(key, dst);
+			case LOCAL_VARIABLE:
+				return addLocalVariable(key, dst);
 			}
 
 			throw new IllegalStateException("invalid child target " + target);
@@ -467,6 +482,19 @@ public class Mappings {
 			return (ParameterMapping)addChild(m);
 		}
 
+		public final LocalVariableMapping addLocalVariable(int index, int startOffset, int lvtIndex, String src, String dst) {
+			return addLocalVariable(LocalVariableMapping.key(index, startOffset, lvtIndex, src), dst);
+		}
+
+		private LocalVariableMapping addLocalVariable(String key, String dst) {
+			return addLocalVariable(new LocalVariableMapping(key, dst));
+		}
+
+		public LocalVariableMapping addLocalVariable(LocalVariableMapping m) {
+			return (LocalVariableMapping)addChild(m);
+		}
+
+
 		public final Mapping removeChild(MappingTarget target, String key) {
 			Mapping m = getChild(target, key);
 			return m == null ? null : removeChild(m);
@@ -533,6 +561,18 @@ public class Mappings {
 
 		public ParameterMapping removeParameter(ParameterMapping p) {
 			return (ParameterMapping)removeChild(p);
+		}
+
+		public final LocalVariableMapping removeLocalVariable(int index, int startOffset, int lvtIndex, String src) {
+			return removeLocalVariable(LocalVariableMapping.key(index, startOffset, lvtIndex, src));
+		}
+
+		private LocalVariableMapping removeLocalVariable(String key) {
+			return removeLocalVariable(getLocalVariable(key));
+		}
+
+		public LocalVariableMapping removeLocalVariable(LocalVariableMapping v) {
+			return (LocalVariableMapping)removeChild(v);
 		}
 
 		public Mapping invert() {
@@ -747,6 +787,7 @@ public class Mappings {
 	public static class MethodMapping extends Mapping {
 
 		private final ParameterMapping[] parameters;
+		private final List<LocalVariableMapping> localVariables = new ArrayList<>();
 
 		private String desc;
 
@@ -785,7 +826,7 @@ public class Mappings {
 
 		@Override
 		protected boolean isValidChild(MappingTarget target) {
-			return target == MappingTarget.PARAMETER;
+			return target == MappingTarget.PARAMETER || target == MappingTarget.LOCAL_VARIABLE;
 		}
 
 		@Override
@@ -844,6 +885,33 @@ public class Mappings {
 		public ParameterMapping removeParameter(int index) {
 			return removeParameter(getParameter(index));
 		}
+
+		@Override
+		public LocalVariableMapping addLocalVariable(LocalVariableMapping v) {
+			v = super.addLocalVariable(v);
+
+			if (v != null) {
+				localVariables.add(v);
+			}
+
+			return v;
+		}
+
+		@Override
+		public LocalVariableMapping removeLocalVariable(LocalVariableMapping v) {
+			v = super.removeLocalVariable(v);
+
+			if (v != null) {
+				localVariables.remove(v);
+			}
+
+			return v;
+		}
+
+		@Override
+		public Collection<LocalVariableMapping> getLocalVariables() {
+			return localVariables;
+		}
 	}
 
 	public static class ParameterMapping extends Mapping {
@@ -896,6 +964,66 @@ public class Mappings {
 		public int getIndex() {
 			return index;
 		}
+	}
+
+	public static class LocalVariableMapping extends Mapping {
+		private final int index;
+		private final int startOffset;
+		private final int lvtIndex;
+
+		private LocalVariableMapping(String src, String dst, int index, int startOffset, int lvtIndex) {
+            super(src, dst);
+			this.index = index;
+			this.startOffset = startOffset;
+			this.lvtIndex = lvtIndex;
+		}
+
+		private LocalVariableMapping(String key, String dst) {
+			this(
+					key.split(":")[3],
+					dst,
+					Integer.parseInt(key.split(":")[0]),
+					Integer.parseInt(key.split(":")[1]),
+					Integer.parseInt(key.split(":")[2])
+			);
+		}
+
+		public int getIndex() {
+			return index;
+		}
+
+		public int getStartOffset() {
+			return startOffset;
+		}
+
+		public int getLvtIndex() {
+			return lvtIndex;
+		}
+
+		@Override
+		public MappingTarget target() {
+			return MappingTarget.LOCAL_VARIABLE;
+		}
+
+		@Override
+		public String key() {
+			return Integer.toString(index) + ":" + Integer.toString(startOffset) + ":" + Integer.toString(lvtIndex) + ":" + src ;
+		}
+
+		private static String key(int index, int startOffset, int lvtIndex, String src) {
+			return Integer.toString(index) + ":" + Integer.toString(startOffset) + ":" + Integer.toString(lvtIndex) + ":" + src ;
+		}
+
+		@Override
+		public LocalVariableMapping invert() {
+			return (LocalVariableMapping)super.invert();
+		}
+
+		@Override
+		protected LocalVariableMapping inverted() {
+			return new LocalVariableMapping(this.dst, this.src, this.index, this.startOffset, this.lvtIndex);
+		}
+
 	}
 
 	private static Mapping checkReplace(Mapping o, Mapping n) {
