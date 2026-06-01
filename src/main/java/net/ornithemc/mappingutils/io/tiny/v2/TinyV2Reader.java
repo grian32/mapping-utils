@@ -10,6 +10,7 @@ import net.ornithemc.mappingutils.io.Mappings.ClassMapping;
 import net.ornithemc.mappingutils.io.Mappings.FieldMapping;
 import net.ornithemc.mappingutils.io.Mappings.MethodMapping;
 import net.ornithemc.mappingutils.io.Mappings.ParameterMapping;
+import net.ornithemc.mappingutils.io.Mappings.LocalVariableMapping;
 import net.ornithemc.mappingutils.io.tiny.TinyMappingsReader;
 
 public class TinyV2Reader extends TinyMappingsReader {
@@ -32,6 +33,7 @@ public class TinyV2Reader extends TinyMappingsReader {
 	private FieldMapping f;
 	private MethodMapping m;
 	private ParameterMapping p;
+	private LocalVariableMapping v;
 
 	private TinyV2Reader(BufferedReader reader, boolean cacheById) {
 		super(reader, new Mappings(cacheById));
@@ -118,7 +120,11 @@ public class TinyV2Reader extends TinyMappingsReader {
 					throw new IllegalStateException("illegal number of arguments (" + ac + ") for parameter javadocs on line " + lineNumber + " - expected 2");
 				}
 				if (p == null) {
-					throw new IllegalStateException("cannot read parameter javadocs on line " + lineNumber + " - not in a parameter?");
+					if (v != null) {
+						v.setJavadoc(args[1+indents]);
+					}
+
+					throw new IllegalStateException("cannot read parameter/local variable javadocs on line " + lineNumber + " - not in a parameter/local variable?");
 				}
 
 				p.setJavadoc(args[1 + indents]);
@@ -205,6 +211,50 @@ public class TinyV2Reader extends TinyMappingsReader {
 			}
 
 			p = m.addParameter(src, dst, index);
+			f = null;
+
+			break;
+		case TinyV2Format.LOCAL_VARIABLE:
+			if (indents != TinyV2Format.LOCAL_VARIABLE_INDENTS) {
+				throw new IllegalStateException("illegal number of indent (" + indents + ") for local variable mapping on line " + lineNumber + " - expected " + TinyV2Format.LOCAL_VARIABLE_INDENTS);
+
+			}
+
+			if (ac != 6 && ac != 5) {
+				throw new IllegalStateException("illegal number of arguments (" + ac + ") for parameter mapping on line " + lineNumber + " - expected 5/6");
+			}
+
+			if (m == null)	{
+				throw new IllegalStateException("cannot read local variable mapping on line " + lineNumber + " - not in a method?");
+			}
+
+			String rawLvIndex = args[1+indents];
+			String rawLvStartOffset = args[2+indents];
+			int lvtIndex = -1;
+			String srcName = "";
+			String dstName = "";
+			if (ac == 6) {
+				lvtIndex = Integer.parseInt(args[3+indents]);
+				srcName = args[4+indents];
+				dstName = args[5+indents];
+			} else {
+				srcName = args[3+indents];
+				dstName = args[4+indents];
+			}
+
+			int lvIndex = Integer.parseInt(rawLvIndex);
+
+			if (lvIndex < 0) {
+				throw new IllegalStateException("illegal local variable index " + rawLvIndex + " on line " + lineNumber + " - cannot be negative!");
+			}
+
+			int startOffset = Integer.parseInt(rawLvStartOffset);
+
+			if (startOffset < 0) {
+				throw new IllegalStateException("illegal local variable start offset" + startOffset + " on line " + lineNumber + " - cannot be negative!");
+			}
+
+			v = m.addLocalVariable(lvIndex, startOffset, lvtIndex, srcName, dstName);
 			f = null;
 
 			break;

@@ -11,6 +11,7 @@ import net.ornithemc.mappingutils.io.Mappings.FieldMapping;
 import net.ornithemc.mappingutils.io.Mappings.Mapping;
 import net.ornithemc.mappingutils.io.Mappings.MethodMapping;
 import net.ornithemc.mappingutils.io.Mappings.ParameterMapping;
+import net.ornithemc.mappingutils.io.Mappings.LocalVariableMapping;
 import net.ornithemc.mappingutils.io.tiny.TinyMappingsWriter;
 
 public class TinyV2Writer extends TinyMappingsWriter {
@@ -109,6 +110,10 @@ public class TinyV2Writer extends TinyMappingsWriter {
 		for (ParameterMapping p : m.getParameters()) {
 			writeParameter(p);
 		}
+
+		for (LocalVariableMapping v : m.getLocalVariables()) {
+			writeLocalVariable(v);
+		}
 	}
 
 	private void writeParameter(ParameterMapping p) throws IOException {
@@ -126,6 +131,24 @@ public class TinyV2Writer extends TinyMappingsWriter {
 		writeJavadoc(p);
 	}
 
+	private void writeLocalVariable(Mappings.LocalVariableMapping v) throws IOException {
+		indent(TinyV2Format.LOCAL_VARIABLE_INDENTS);
+
+		writer.write(TinyV2Format.LOCAL_VARIABLE);
+		writer.write(TAB);
+		writer.write(Integer.toString(v.getIndex()));
+		writer.write(TAB);
+		writer.write(Integer.toString(v.getStartOffset()));
+		writer.write(TAB);
+		writer.write(Integer.toString(v.getLvtIndex()));
+		writer.write(TAB);
+		writer.write(v.src());
+		writer.write(TAB);
+		writer.write(v.get()); // dst
+		writer.newLine();
+
+		writeJavadoc(v);
+	}
 	private void writeJavadoc(Mapping mapping) throws IOException {
 		String jav = mapping.getJavadoc();
 
