@@ -5,6 +5,7 @@ import net.ornithemc.mappingutils.io.diff.MappingsDiff.Diff;
 import net.ornithemc.mappingutils.io.diff.MappingsDiff.FieldDiff;
 import net.ornithemc.mappingutils.io.diff.MappingsDiff.MethodDiff;
 import net.ornithemc.mappingutils.io.diff.MappingsDiff.ParameterDiff;
+import net.ornithemc.mappingutils.io.diff.MappingsDiff.LocalVariableDiff;
 
 public interface MappingsDiffValidator {
 
@@ -29,6 +30,11 @@ public interface MappingsDiffValidator {
 		public boolean validate(ParameterDiff p) {
 			return true;
 		}
+
+		@Override
+		public boolean validate(LocalVariableDiff v) {
+			return true;
+		}
 	};
 	public static final MappingsDiffValidator NEVER = new MappingsDiffValidator() {
 
@@ -51,6 +57,11 @@ public interface MappingsDiffValidator {
 		public boolean validate(ParameterDiff p) {
 			return false;
 		}
+
+		@Override
+		public boolean validate(LocalVariableDiff v) {
+			return false;
+		}
 	};
 
 	default boolean validate(Diff mapping) {
@@ -63,6 +74,8 @@ public interface MappingsDiffValidator {
 			return validate((MethodDiff)mapping);
 		case PARAMETER:
 			return validate((ParameterDiff)mapping);
+		case LOCAL_VARIABLE:
+			return validate((LocalVariableDiff) mapping);
 		default:
 			return false;
 		}
@@ -76,4 +89,5 @@ public interface MappingsDiffValidator {
 
 	boolean validate(ParameterDiff p);
 
+	boolean validate(LocalVariableDiff v);
 }

@@ -306,6 +306,14 @@ public class MappingsDiff {
 			return (ParameterDiff)getChild(MappingTarget.PARAMETER, key);
 		}
 
+		public final LocalVariableDiff getLocalVariable(int index, int startOffset, int lvtIndex, String src) {
+			return getLocalVariable(LocalVariableDiff.key(index, startOffset, lvtIndex, src));
+		}
+
+		private LocalVariableDiff getLocalVariable(String key) {
+			return (LocalVariableDiff)getChild(MappingTarget.LOCAL_VARIABLE, key);
+		}
+
 		public final Collection<Diff> getChildren() {
 			return children.values();
 		}
@@ -349,6 +357,10 @@ public class MappingsDiff {
 			return castChildren(MappingTarget.PARAMETER);
 		}
 
+		public Collection<LocalVariableDiff> getLocalVariables() {
+			return castChildren(MappingTarget.LOCAL_VARIABLE);
+		}
+
 		public final Collection<Diff> getChildren(String id) {
 			if (childrenById == null) {
 				throw new UnsupportedOperationException("these diffs are not cached by id!");
@@ -367,6 +379,8 @@ public class MappingsDiff {
 				return addMethod(key, dstA, dstB);
 			case PARAMETER:
 				return addParameter(key, dstA, dstB);
+			case LOCAL_VARIABLE:
+				return addLocalVariable(key, dstA, dstB);
 			}
 
 			throw new IllegalStateException("invalid child target " + target);
@@ -439,6 +453,18 @@ public class MappingsDiff {
 			return (ParameterDiff)addChild(m);
 		}
 
+		public final LocalVariableDiff addLocalVariable(int index, int startOffset, int lvtIndex, String src, String dstA, String dstB) {
+			return addLocalVariable(LocalVariableDiff.key(index, startOffset, lvtIndex, src), dstA, dstB);
+		}
+
+		private LocalVariableDiff addLocalVariable(String key, String dstA, String dstB) {
+			return addLocalVariable(new LocalVariableDiff(key, dstA, dstB));
+		}
+
+		public LocalVariableDiff addLocalVariable(LocalVariableDiff v) {
+			return (LocalVariableDiff)addChild(v);
+		}
+
 		public final Diff removeChild(MappingTarget target, String key) {
 			Diff d = getChild(target, key);
 			return d == null ? null : removeChild(d);
@@ -505,6 +531,18 @@ public class MappingsDiff {
 
 		public ParameterDiff removeParameter(ParameterDiff p) {
 			return (ParameterDiff)removeChild(p);
+		}
+
+		public final LocalVariableDiff removeLocalVariable(int index, int startOffset, int lvtIndex, String src) {
+			return removeLocalVariable(LocalVariableDiff.key(index, startOffset, lvtIndex, src));
+		}
+
+		private LocalVariableDiff removeLocalVariable(String key) {
+			return removeLocalVariable(getLocalVariable(key));
+		}
+
+		public LocalVariableDiff removeLocalVariable(LocalVariableDiff v) {
+			return (LocalVariableDiff)removeChild(v);
 		}
 
 		protected final boolean validate() {
@@ -614,6 +652,7 @@ public class MappingsDiff {
 	public static class MethodDiff extends Diff {
 
 		private final ParameterDiff[] parameters;
+		private final List<LocalVariableDiff> localVariables = new LinkedList<>();
 
 		private String desc;
 
@@ -652,7 +691,7 @@ public class MappingsDiff {
 
 		@Override
 		protected boolean isValidChild(MappingTarget target) {
-			return target == MappingTarget.PARAMETER;
+			return target == MappingTarget.PARAMETER || target == MappingTarget.LOCAL_VARIABLE;
 		}
 
 		@Override
@@ -701,6 +740,33 @@ public class MappingsDiff {
 		public ParameterDiff removeParameter(int index) {
 			return removeParameter(getParameter(index));
 		}
+
+		@Override
+		public LocalVariableDiff addLocalVariable(LocalVariableDiff v) {
+			v = super.addLocalVariable(v);
+
+			if (v != null) {
+				localVariables.add(v);
+			}
+
+			return v;
+		}
+
+		@Override
+		public LocalVariableDiff removeLocalVariable(LocalVariableDiff v) {
+			v = super.removeLocalVariable(v);
+
+			if (v != null) {
+				localVariables.remove(v);
+			}
+
+			return v;
+		}
+
+		@Override
+		public Collection<LocalVariableDiff> getLocalVariables() {
+			return localVariables;
+		}
 	}
 
 	public static class ParameterDiff extends Diff {
@@ -742,6 +808,62 @@ public class MappingsDiff {
 
 		public int getIndex() {
 			return index;
+		}
+	}
+
+	public static class LocalVariableDiff extends Diff {
+		private final int index;
+		private final int startOffset;
+		private final int lvtIndex;
+
+		private LocalVariableDiff(String src, String dstA, String dstB, int index, int startOffset, int lvtIndex) {
+			super(src, dstA, dstB);
+
+			this.index = index;
+			this.startOffset = startOffset;
+			this.lvtIndex = lvtIndex;
+		}
+
+		private LocalVariableDiff(String key, String dstA, String dstB) {
+			this(
+					key.split(":")[3],
+					dstA,
+					dstB,
+					Integer.parseInt(key.split(":")[0]),
+					Integer.parseInt(key.split(":")[1]),
+					Integer.parseInt(key.split(":")[2])
+			);
+		}
+
+		public int getIndex() {
+			return index;
+		}
+
+		public int getStartOffset() {
+			return startOffset;
+		}
+
+		public int getLvtIndex() {
+			return lvtIndex;
+		}
+
+		@Override
+		public MappingTarget target() {
+			return MappingTarget.LOCAL_VARIABLE;
+		}
+
+		@Override
+		public String key() {
+			return key(index, startOffset, lvtIndex, src);
+		}
+
+		static String key(int index, int startOffset, int lvtIndex, String src) {
+			return Integer.toString(index) + ":" + Integer.toString(startOffset) + ":" + Integer.toString(lvtIndex) + ":" + src;
+		}
+
+		@Override
+		public MethodDiff getParent() {
+			return (MethodDiff)parent;
 		}
 	}
 
