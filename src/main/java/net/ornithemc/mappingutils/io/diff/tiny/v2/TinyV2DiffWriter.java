@@ -11,6 +11,7 @@ import net.ornithemc.mappingutils.io.diff.MappingsDiff.ClassDiff;
 import net.ornithemc.mappingutils.io.diff.MappingsDiff.Diff;
 import net.ornithemc.mappingutils.io.diff.MappingsDiff.FieldDiff;
 import net.ornithemc.mappingutils.io.diff.MappingsDiff.JavadocDiff;
+import net.ornithemc.mappingutils.io.diff.MappingsDiff.LocalVariableDiff;
 import net.ornithemc.mappingutils.io.diff.MappingsDiff.MethodDiff;
 import net.ornithemc.mappingutils.io.diff.MappingsDiff.ParameterDiff;
 import net.ornithemc.mappingutils.io.diff.tiny.TinyDiffWriter;
@@ -119,6 +120,10 @@ public class TinyV2DiffWriter extends TinyDiffWriter {
 		for (ParameterDiff p : m.getParameters()) {
 			writeParameter(p);
 		}
+
+		for (LocalVariableDiff v : m.getLocalVariables()) {
+			writeLocalVariable(v);
+		}
 	}
 
 	private void writeParameter(ParameterDiff p) throws IOException {
@@ -138,6 +143,29 @@ public class TinyV2DiffWriter extends TinyDiffWriter {
 		writer.newLine();
 
 		writeJavadoc(p);
+	}
+
+	private void writeLocalVariable(LocalVariableDiff v) throws IOException {
+		indent(TinyV2Format.LOCAL_VARIABLE_INDENTS);
+
+		writer.write(TinyV2Format.LOCAL_VARIABLE);
+		writer.write(TAB);
+		writer.write(Integer.toString(v.getIndex()));
+		writer.write(TAB);
+		writer.write(Integer.toString(v.getStartOffset()));
+		writer.write(TAB);
+		writer.write(Integer.toString(v.getLvtIndex()));
+		writer.write(TAB);
+		writer.write(v.src());
+		if (v.isDiff()) {
+			writer.write(TAB);
+			writer.write(v.get(DiffSide.A));
+			writer.write(TAB);
+			writer.write(v.get(DiffSide.B));
+		}
+		writer.newLine();
+
+		writeJavadoc(v);
 	}
 
 	private void writeJavadoc(Diff d) throws IOException {

@@ -230,6 +230,53 @@ public class TinyV2DiffReader extends TinyDiffReader {
 			f = null;
 
 			break;
+		case TinyV2Format.LOCAL_VARIABLE:
+			if (indents != TinyV2Format.LOCAL_VARIABLE_INDENTS) {
+				throw new IllegalStateException("illegal number of indent (" + indents + ") for local variable mapping on line " + lineNumber + " - expected " + TinyV2Format.LOCAL_VARIABLE_INDENTS);
+			}
+			if (ac != 7 && ac != 6 && ac != 5) {
+				throw new IllegalStateException("illegal number of arguments (" + ac + ") for local variable mapping on line " + lineNumber + " - expected 5/6/7");
+			}
+			if (m == null) {
+				throw new IllegalStateException("cannot read local variable mapping on line " + lineNumber + " - not in a method?");
+			}
+
+			String rawLvIndex = args[1 + indents];
+			String rawLvStartOffset = args[2 + indents];
+			String rawLvtIndex = "-1";
+			String srcName = "";
+			dstA = "";
+			dstB = "";
+
+			if (ac == 7) {
+				rawLvtIndex = args[3 + indents];
+				srcName = args[4 + indents];
+				dstA = args[5 + indents];
+				dstB = args[6 + indents];
+			} else if (ac == 6) {
+				rawLvtIndex = args[3 + indents];
+				srcName = args[4 + indents];
+				dstB = args[5 + indents];
+			} else {
+				srcName = args[3 + indents];
+				dstB = args[4 + indents];
+			}
+
+			int lvIndex = Integer.parseInt(rawLvIndex);
+			if (lvIndex < 0) {
+				throw new IllegalStateException("illegal local variable index " + rawLvIndex + " on line " + lineNumber + " - cannot be negative!");
+			}
+
+			int startOffset = Integer.parseInt(rawLvStartOffset);
+			if (startOffset < 0) {
+				throw new IllegalStateException("illegal local variable start offset" + startOffset + " on line " + lineNumber + " - cannot be negative!");
+			}
+
+			m.addLocalVariable(lvIndex, startOffset, Integer.parseInt(rawLvtIndex), srcName, dstA, dstB);
+			f = null;
+			p = null;
+
+			break;
 		default:
 			throw new IllegalStateException("unknown mapping target " + args[indents] + " on line " + lineNumber + " - " + Arrays.toString(args));
 		}
