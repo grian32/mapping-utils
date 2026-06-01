@@ -5,6 +5,7 @@ import net.ornithemc.mappingutils.io.Mappings.FieldMapping;
 import net.ornithemc.mappingutils.io.Mappings.Mapping;
 import net.ornithemc.mappingutils.io.Mappings.MethodMapping;
 import net.ornithemc.mappingutils.io.Mappings.ParameterMapping;
+import net.ornithemc.mappingutils.io.Mappings.LocalVariableMapping;
 
 public interface MappingValidator {
 
@@ -29,6 +30,9 @@ public interface MappingValidator {
 		public boolean validate(ParameterMapping p) {
 			return true;
 		}
+
+		@Override
+		public boolean validate(LocalVariableMapping v) { return true; }
 	};
 	public static final MappingValidator NEVER = new MappingValidator() {
 
@@ -51,6 +55,9 @@ public interface MappingValidator {
 		public boolean validate(ParameterMapping p) {
 			return false;
 		}
+
+		@Override
+		public boolean validate(LocalVariableMapping v) { return false; }
 	};
 
 	default boolean validate(Mapping mapping) {
@@ -63,6 +70,8 @@ public interface MappingValidator {
 			return validate((MethodMapping)mapping);
 		case PARAMETER:
 			return validate((ParameterMapping)mapping);
+		case LOCAL_VARIABLE:
+			return validate((LocalVariableMapping)mapping);
 		default:
 			return false;
 		}
@@ -76,4 +85,5 @@ public interface MappingValidator {
 
 	boolean validate(ParameterMapping p);
 
+	boolean validate(LocalVariableMapping v);
 }
