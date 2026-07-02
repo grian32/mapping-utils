@@ -220,7 +220,7 @@ public class TinyV2Reader extends TinyMappingsReader {
 
 			}
 
-			if (ac != 6 && ac != 5) {
+			if (ac != 6) {
 				throw new IllegalStateException("illegal number of arguments (" + ac + ") for parameter mapping on line " + lineNumber + " - expected 5/6");
 			}
 
@@ -230,18 +230,9 @@ public class TinyV2Reader extends TinyMappingsReader {
 
 			String rawLvIndex = args[1+indents];
 			String rawLvStartOffset = args[2+indents];
-			int lvtIndex = -1;
-			String srcName = "";
-			String dstName = "";
-			if (ac == 6) {
-				lvtIndex = Integer.parseInt(args[3+indents]);
-				srcName = args[4+indents];
-				dstName = args[5+indents];
-			} else {
-				srcName = args[3+indents];
-				dstName = args[4+indents];
-			}
-
+			String rawLvtIndex = args[3+indents];
+			String srcName = args[4+indents];
+			String dstName = args[5+indents];
 			int lvIndex = Integer.parseInt(rawLvIndex);
 
 			if (lvIndex < 0) {
@@ -252,6 +243,12 @@ public class TinyV2Reader extends TinyMappingsReader {
 
 			if (startOffset < 0) {
 				throw new IllegalStateException("illegal local variable start offset" + startOffset + " on line " + lineNumber + " - cannot be negative!");
+			}
+
+			int lvtIndex = Integer.parseInt(rawLvtIndex);
+
+			if (lvtIndex < -1) {
+				throw new IllegalStateException("illegal local variable table index" + lvtIndex + " on line " + lineNumber + " - cannot be less than -1!");
 			}
 
 			v = m.addLocalVariable(lvIndex, startOffset, lvtIndex, srcName, dstName);

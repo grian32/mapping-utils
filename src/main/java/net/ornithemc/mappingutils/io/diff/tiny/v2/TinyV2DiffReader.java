@@ -243,7 +243,7 @@ public class TinyV2DiffReader extends TinyDiffReader {
 
 			String rawLvIndex = args[1 + indents];
 			String rawLvStartOffset = args[2 + indents];
-			String rawLvtIndex = "-1";
+			String rawLvtIndex = args[3+indents];
 			String srcName = "";
 			dstA = "";
 			dstB = "";
@@ -256,10 +256,10 @@ public class TinyV2DiffReader extends TinyDiffReader {
 			} else if (ac == 6) {
 				rawLvtIndex = args[3 + indents];
 				srcName = args[4 + indents];
-				dstB = args[5 + indents];
+				dstA = args[5 + indents];
 			} else {
-				srcName = args[3 + indents];
-				dstB = args[4 + indents];
+				rawLvtIndex = args[3 + indents];
+				srcName = args[4 + indents];
 			}
 
 			int lvIndex = Integer.parseInt(rawLvIndex);
@@ -272,7 +272,12 @@ public class TinyV2DiffReader extends TinyDiffReader {
 				throw new IllegalStateException("illegal local variable start offset" + startOffset + " on line " + lineNumber + " - cannot be negative!");
 			}
 
-			m.addLocalVariable(lvIndex, startOffset, Integer.parseInt(rawLvtIndex), srcName, dstA, dstB);
+			int lvtIndex = Integer.parseInt(rawLvtIndex);
+			if (lvtIndex < -1) {
+				throw new IllegalStateException("illegal local variable table index" + lvtIndex + " on line " + lineNumber + " - cannot be less than -1!");
+			}
+
+			m.addLocalVariable(lvIndex, startOffset, lvtIndex, srcName, dstA, dstB);
 			f = null;
 			p = null;
 
