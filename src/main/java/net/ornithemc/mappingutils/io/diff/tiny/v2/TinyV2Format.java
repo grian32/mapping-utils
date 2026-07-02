@@ -10,8 +10,8 @@ class TinyV2Format {
 	static final String FIELD = "f";
 	static final String METHOD = "m";
 	static final String PARAMETER = "p";
-	static final String COMMENT = "c";
 	static final String LOCAL_VARIABLE = "v";
+	static final String COMMENT = "c";
 
 	static final int CLASS_INDENTS = 0;
 	static final int FIELD_INDENTS = CLASS_INDENTS + 1;
